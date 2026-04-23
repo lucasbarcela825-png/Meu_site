@@ -1,0 +1,1234 @@
+import { useEffect, useRef, useState } from 'react';
+import { motion, useInView, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const PHONE = '(XX) XXXXX-XXXX';
+const EMAIL = 'seuemail@email.com';
+const WHATSAPP = '5511999999999';
+
+// ─── Animation helpers ────────────────────────────────────────────────────────
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, delay: i * 0.1, ease: 'easeOut' },
+  }),
+};
+
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    transition: { duration: 0.6, delay: i * 0.1, ease: 'easeOut' },
+  }),
+};
+
+function InView({ children, className = '', delay = 0, direction = 'up' }: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  direction?: 'up' | 'none';
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-60px' });
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+      variants={direction === 'up' ? fadeUp : fadeIn}
+      custom={delay}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const links = [
+    { label: 'Sobre', href: '#sobre' },
+    { label: 'Diferenciais', href: '#diferenciais' },
+    { label: 'Habilidades', href: '#habilidades' },
+    { label: 'Projetos', href: '#projetos' },
+    { label: 'Contato', href: '#contato' },
+  ];
+
+  const scrollTo = (href: string) => {
+    setMenuOpen(false);
+    setTimeout(() => {
+      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  return (
+    <>
+      <motion.nav
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          padding: '0 40px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: scrolled ? 'rgba(242,237,228,0.92)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(12px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(26,25,22,0.08)' : '1px solid transparent',
+          transition: 'all 0.4s ease',
+        }}
+      >
+        {/* Logo */}
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{
+            fontFamily: 'Georgia, serif',
+            fontSize: '1rem',
+            color: 'var(--ink)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            letterSpacing: '0.01em',
+          }}
+        >
+          Lucas Barcela
+        </button>
+
+        {/* Desktop links */}
+        <div className="hidden md:flex" style={{ gap: '36px', alignItems: 'center' }}>
+          {links.map((l) => (
+            <button
+              key={l.label}
+              onClick={() => scrollTo(l.href)}
+              className="underline-hover"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '0.75rem',
+                fontWeight: 400,
+                letterSpacing: '0.08em',
+                color: 'var(--ink-light)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                padding: 0,
+              }}
+            >
+              {l.label}
+            </button>
+          ))}
+          <a
+            href={`https://wa.me/${WHATSAPP}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary"
+            style={{ padding: '10px 24px', fontSize: '0.7rem' }}
+          >
+            Conversar
+          </a>
+        </div>
+
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="md:hidden"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--ink)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '5px',
+            padding: '4px',
+          }}
+          aria-label="Menu"
+        >
+          <motion.span
+            animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
+            style={{ display: 'block', width: '22px', height: '1px', background: 'var(--ink)', transformOrigin: 'center' }}
+          />
+          <motion.span
+            animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
+            style={{ display: 'block', width: '22px', height: '1px', background: 'var(--ink)' }}
+          />
+          <motion.span
+            animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
+            style={{ display: 'block', width: '22px', height: '1px', background: 'var(--ink)', transformOrigin: 'center' }}
+          />
+        </button>
+      </motion.nav>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: 'fixed',
+              top: 64,
+              left: 0,
+              right: 0,
+              zIndex: 99,
+              backgroundColor: 'var(--cream)',
+              borderBottom: '1px solid var(--line)',
+              padding: '24px 40px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+          >
+            {links.map((l, i) => (
+              <motion.button
+                key={l.label}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06 }}
+                onClick={() => scrollTo(l.href)}
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '1rem',
+                  fontWeight: 300,
+                  color: 'var(--ink)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  padding: '4px 0',
+                  borderBottom: '1px solid var(--line)',
+                }}
+              >
+                {l.label}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+function Hero() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
+  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  return (
+    <section
+      ref={ref}
+      id="hero"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        padding: '0 40px 80px',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      {/* Top info bar */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.8 }}
+        style={{
+          position: 'absolute',
+          top: 88,
+          right: 40,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '6px',
+        }}
+      >
+        <span className="label">Brasil, 2025</span>
+        <span className="label">Candidato — Cursos Profissionalizantes</span>
+      </motion.div>
+
+      {/* Small label top-left */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1 }}
+        style={{ position: 'absolute', top: 88, left: 40 }}
+      >
+        <span className="label">Currículo Digital</span>
+      </motion.div>
+
+      {/* Main content with parallax */}
+      <motion.div style={{ y, opacity }}>
+        {/* Headline */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          style={{ marginBottom: '48px' }}
+        >
+          <h1
+            className="hero-name"
+            style={{
+              fontSize: 'clamp(4rem, 13vw, 12rem)',
+              marginBottom: '0',
+            }}
+          >
+            Lucas
+          </h1>
+          <h1
+            className="hero-name"
+            style={{
+              fontSize: 'clamp(4rem, 13vw, 12rem)',
+              color: 'var(--ink-light)',
+            }}
+          >
+            Barcela
+          </h1>
+        </motion.div>
+
+        {/* Bottom row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: '32px',
+          }}
+        >
+          <div style={{ maxWidth: '540px' }}>
+            <p
+              className="hero-tagline"
+              style={{ fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)', marginBottom: '32px' }}
+            >
+              "Transformo ideias em ação<br />
+              e aprendizado em resultado."
+            </p>
+            <p style={{ fontSize: '0.95rem', color: 'var(--ink-light)', fontWeight: 300, maxWidth: '420px', lineHeight: 1.7 }}>
+              Buscando oportunidade para crescer, aprender rápido<br />
+              e gerar valor real dentro da empresa.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
+            <a
+              href="#sobre"
+              onClick={(e) => { e.preventDefault(); document.querySelector('#sobre')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="btn-primary"
+            >
+              Ver meu trabalho
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7l6 6 6-6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+          </div>
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Marquee ──────────────────────────────────────────────────────────────────
+function Marquee() {
+  const words = [
+    'Mentalidade de Crescimento', '·', 'Aprendizado Rápido', '·',
+    'Iniciativa', '·', 'Comprometimento', '·', 'Comunicação', '·',
+    'Atendimento', '·', 'Vendas', '·', 'Resultado', '·',
+  ];
+  const doubled = [...words, ...words];
+
+  return (
+    <div
+      style={{
+        borderBottom: '1px solid var(--line)',
+        padding: '18px 0',
+        overflow: 'hidden',
+        backgroundColor: 'var(--cream-dark)',
+      }}
+    >
+      <div className="marquee-track">
+        {doubled.map((w, i) => (
+          <span
+            key={i}
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-mid)',
+              whiteSpace: 'nowrap',
+              paddingRight: '28px',
+            }}
+          >
+            {w}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sobre Mim ────────────────────────────────────────────────────────────────
+function Sobre() {
+  return (
+    <section
+      id="sobre"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Top label */}
+        <InView>
+          <span className="label" style={{ display: 'block', marginBottom: '64px' }}>
+            01 — Sobre mim
+          </span>
+        </InView>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'clamp(40px, 8vw, 120px)',
+            alignItems: 'start',
+          }}
+        >
+          {/* Left: big text */}
+          <InView delay={0.1}>
+            <h2
+              className="section-title"
+              style={{ fontSize: 'clamp(2rem, 5vw, 3.8rem)', marginBottom: '0' }}
+            >
+              Prático,<br />
+              focado em<br />
+              evolução<br />
+              constante.
+            </h2>
+          </InView>
+
+          {/* Right: text + details */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingTop: '8px' }}>
+            <InView delay={0.2}>
+              <p style={{ fontSize: '1.05rem', lineHeight: 1.8, color: 'var(--ink-mid)', fontWeight: 300 }}>
+                Sou uma pessoa prática, focada em evolução constante e em aprender
+                habilidades que gerem resultado no mundo real.
+              </p>
+            </InView>
+            <InView delay={0.3}>
+              <p style={{ fontSize: '1.05rem', lineHeight: 1.8, color: 'var(--ink-mid)', fontWeight: 300 }}>
+                Tenho interesse em negócios, atendimento, vendas e crescimento profissional.
+                Busco uma oportunidade onde eu possa aprender rápido, assumir
+                responsabilidades e contribuir com resultados reais para a empresa.
+              </p>
+            </InView>
+
+            {/* Stats row */}
+            <InView delay={0.4}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '1px',
+                  backgroundColor: 'var(--line)',
+                  border: '1px solid var(--line)',
+                  marginTop: '16px',
+                }}
+              >
+                {[
+                  { n: '100%', l: 'Comprometimento' },
+                  { n: 'Alta', l: 'Velocidade de aprendizado' },
+                  { n: '∞', l: 'Vontade de crescer' },
+                ].map((s) => (
+                  <div
+                    key={s.l}
+                    style={{
+                      padding: '24px 20px',
+                      backgroundColor: 'var(--cream)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                    }}
+                  >
+                    <span className="stat-number" style={{ fontSize: '1.8rem' }}>{s.n}</span>
+                    <span className="label" style={{ color: 'var(--ink-faint)' }}>{s.l}</span>
+                  </div>
+                ))}
+              </div>
+            </InView>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Diferenciais ─────────────────────────────────────────────────────────────
+function Diferenciais() {
+  const items = [
+    {
+      n: '01',
+      title: 'Mentalidade de Crescimento',
+      desc: 'Encaro desafios como oportunidades de aprendizado. Prefiro tentar, errar e melhorar do que não tentar.',
+    },
+    {
+      n: '02',
+      title: 'Aprendizado Rápido',
+      desc: 'Capaz de absorver novas informações e processos com velocidade, adaptando-me rapidamente ao ambiente de trabalho.',
+    },
+    {
+      n: '03',
+      title: 'Interesse em Negócios',
+      desc: 'Curiosidade genuína pelo mercado, pelo funcionamento das empresas e por como criar e entregar valor real.',
+    },
+    {
+      n: '04',
+      title: 'Iniciativa',
+      desc: 'Não espero ser mandado — criei este site como currículo para me diferenciar e mostrar na prática minha atitude.',
+    },
+    {
+      n: '05',
+      title: 'Comprometimento',
+      desc: 'Quando assumo uma responsabilidade, levo a sério. Resultado é consequência de disciplina e esforço consistente.',
+    },
+    {
+      n: '06',
+      title: 'Pensamento Estratégico',
+      desc: 'Gosto de entender o porquê por trás das coisas, pensar na causa raiz dos problemas e em soluções que funcionam.',
+    },
+  ];
+
+  return (
+    <section
+      id="diferenciais"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        borderBottom: '1px solid var(--line)',
+        backgroundColor: 'var(--cream-dark)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: '32px',
+            marginBottom: '80px',
+          }}
+        >
+          <InView>
+            <span className="label" style={{ display: 'block', marginBottom: '20px' }}>
+              02 — Diferenciais
+            </span>
+            <h2
+              className="section-title"
+              style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}
+            >
+              O que me<br />diferencia.
+            </h2>
+          </InView>
+          <InView delay={0.2}>
+            <p style={{ maxWidth: '360px', fontSize: '0.95rem', color: 'var(--ink-light)', lineHeight: 1.7 }}>
+              Mesmo sem experiência formal, trago atitudes e comportamentos que constroem
+              resultados de longo prazo.
+            </p>
+          </InView>
+        </div>
+
+        {/* Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1px',
+            backgroundColor: 'var(--line)',
+            border: '1px solid var(--line)',
+          }}
+        >
+          {items.map((item, i) => (
+            <InView key={item.n} delay={i * 0.07} direction="none">
+              <motion.div
+                whileHover={{ backgroundColor: 'var(--ink)', color: 'var(--cream)' }}
+                transition={{ duration: 0.25 }}
+                className="group"
+                style={{
+                  padding: '40px 36px',
+                  backgroundColor: 'var(--cream-dark)',
+                  cursor: 'default',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: '0.85rem',
+                    color: 'var(--ink-faint)',
+                    transition: 'color 0.25s',
+                  }}
+                >
+                  {item.n}
+                </span>
+                <h3
+                  style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: '1.15rem',
+                    fontWeight: 400,
+                    lineHeight: 1.3,
+                    color: 'inherit',
+                    transition: 'color 0.25s',
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '0.88rem',
+                    lineHeight: 1.7,
+                    color: 'var(--ink-light)',
+                    fontWeight: 300,
+                    transition: 'color 0.25s',
+                  }}
+                >
+                  {item.desc}
+                </p>
+              </motion.div>
+            </InView>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Habilidades ──────────────────────────────────────────────────────────────
+function Habilidades() {
+  const skills = [
+    { name: 'Comunicação', level: 88 },
+    { name: 'Organização', level: 82 },
+    { name: 'Aprendizado Rápido', level: 95 },
+    { name: 'Atendimento ao Cliente', level: 78 },
+    { name: 'Interesse em Vendas', level: 85 },
+    { name: 'Tecnologia & Internet', level: 72 },
+  ];
+
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+
+  return (
+    <section
+      id="habilidades"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <InView>
+          <span className="label" style={{ display: 'block', marginBottom: '64px' }}>
+            03 — Habilidades
+          </span>
+        </InView>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'clamp(40px, 8vw, 120px)',
+            alignItems: 'start',
+          }}
+        >
+          {/* Left: title */}
+          <InView delay={0.1}>
+            <h2
+              className="section-title"
+              style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}
+            >
+              Competências<br />
+              em destaque.
+            </h2>
+            <p style={{ marginTop: '24px', fontSize: '0.95rem', color: 'var(--ink-light)', lineHeight: 1.7, fontWeight: 300 }}>
+              Habilidades desenvolvidas por interesse genuíno
+              e aplicação prática no dia a dia.
+            </p>
+          </InView>
+
+          {/* Right: bars */}
+          <div ref={ref} style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {skills.map((s, i) => (
+              <InView key={s.name} delay={i * 0.08}>
+                <div
+                  style={{
+                    padding: '24px 0',
+                    borderBottom: '1px solid var(--line)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--ink)' }}>{s.name}</span>
+                    <span className="label">{s.level}%</span>
+                  </div>
+                  {/* Track */}
+                  <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--cream-mid)', position: 'relative' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={isInView ? { width: `${s.level}%` } : { width: 0 }}
+                      transition={{ duration: 1.2, delay: 0.2 + i * 0.1, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ height: '1px', backgroundColor: 'var(--ink)', position: 'absolute', top: 0, left: 0 }}
+                    />
+                  </div>
+                </div>
+              </InView>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Objetivo ─────────────────────────────────────────────────────────────────
+function Objetivo() {
+  const areas = [
+    { icon: '◎', label: 'Atendimento' },
+    { icon: '◎', label: 'Vendas' },
+    { icon: '◎', label: 'Suporte ao Aluno' },
+    { icon: '◎', label: 'Operação do Negócio' },
+  ];
+
+  return (
+    <section
+      id="objetivo"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        borderBottom: '1px solid var(--line)',
+        backgroundColor: 'var(--cream-dark)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <InView>
+          <span className="label" style={{ display: 'block', marginBottom: '64px' }}>
+            04 — Objetivo Profissional
+          </span>
+        </InView>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'clamp(40px, 8vw, 120px)',
+            alignItems: 'center',
+          }}
+        >
+          <InView delay={0.1}>
+            <h2
+              className="section-title"
+              style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', marginBottom: '32px', lineHeight: 1.2 }}
+            >
+              Quero desenvolver habilidades práticas e me tornar alguém que realmente gera resultado.
+            </h2>
+
+            <p style={{ fontSize: '0.95rem', color: 'var(--ink-light)', lineHeight: 1.8, fontWeight: 300, marginBottom: '40px' }}>
+              Tenho interesse em áreas como atendimento, vendas, suporte ao aluno e operação do negócio.
+              Estou pronto para aprender, crescer e contribuir desde o primeiro dia.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {areas.map((a) => (
+                <div
+                  key={a.label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    border: '1px solid var(--line-strong)',
+                    backgroundColor: 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: '0.6rem', color: 'var(--ink-faint)' }}>{a.icon}</span>
+                  <span style={{ fontSize: '0.8rem', letterSpacing: '0.06em', color: 'var(--ink-mid)' }}>{a.label}</span>
+                </div>
+              ))}
+            </div>
+          </InView>
+
+          <InView delay={0.3}>
+            <div
+              style={{
+                border: '1px solid var(--line)',
+                padding: '48px 40px',
+                backgroundColor: 'var(--cream)',
+                position: 'relative',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'Georgia, serif',
+                  fontSize: '4rem',
+                  lineHeight: 1,
+                  color: 'var(--cream-mid)',
+                  display: 'block',
+                  marginBottom: '-20px',
+                }}
+              >
+                "
+              </span>
+              <p
+                style={{
+                  fontFamily: 'Georgia, serif',
+                  fontStyle: 'italic',
+                  fontSize: '1.2rem',
+                  lineHeight: 1.65,
+                  color: 'var(--ink)',
+                  fontWeight: 400,
+                }}
+              >
+                O crescimento começa quando paramos de esperar a oportunidade perfeita e
+                começamos a criar a nossa própria.
+              </p>
+              <div
+                style={{
+                  marginTop: '32px',
+                  paddingTop: '24px',
+                  borderTop: '1px solid var(--line)',
+                }}
+              >
+                <span className="label">Lucas Barcela — Princípio pessoal</span>
+              </div>
+            </div>
+          </InView>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Projetos ─────────────────────────────────────────────────────────────────
+function Projetos() {
+  return (
+    <section
+      id="projetos"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        borderBottom: '1px solid var(--line)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <InView>
+          <span className="label" style={{ display: 'block', marginBottom: '64px' }}>
+            05 — Iniciativas
+          </span>
+        </InView>
+
+        {/* Feature card */}
+        <InView delay={0.1}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '1px',
+              backgroundColor: 'var(--line)',
+              border: '1px solid var(--line)',
+              marginBottom: '1px',
+            }}
+          >
+            {/* Left info */}
+            <div style={{ padding: 'clamp(40px, 6vw, 72px)', backgroundColor: 'var(--cream)' }}>
+              <span className="label" style={{ marginBottom: '24px', display: 'block' }}>Projeto 001</span>
+              <h3
+                style={{
+                  fontFamily: 'Georgia, serif',
+                  fontSize: 'clamp(1.5rem, 3vw, 2.5rem)',
+                  fontWeight: 400,
+                  lineHeight: 1.2,
+                  color: 'var(--ink)',
+                  marginBottom: '24px',
+                }}
+              >
+                Site Currículo<br />Próprio
+              </h3>
+              <p style={{ fontSize: '0.95rem', color: 'var(--ink-light)', lineHeight: 1.8, fontWeight: 300, marginBottom: '40px' }}>
+                Desenvolvi este site como forma de me diferenciar, demonstrar iniciativa e
+                mostrar na prática minha capacidade de aprender e executar. Enquanto outros
+                enviam um PDF, eu entrego uma experiência.
+              </p>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                {['Design', 'Desenvolvimento', 'Iniciativa', 'Criatividade'].map((tag) => (
+                  <span
+                    key={tag}
+                    className="label"
+                    style={{
+                      padding: '6px 14px',
+                      border: '1px solid var(--line-strong)',
+                      color: 'var(--ink-mid)',
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: visual */}
+            <div
+              style={{
+                backgroundColor: 'var(--ink)',
+                padding: 'clamp(40px, 6vw, 72px)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '420px',
+              }}
+            >
+              {/* Browser mockup */}
+              <div
+                style={{
+                  border: '1px solid rgba(242,237,228,0.15)',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Browser bar */}
+                <div
+                  style={{
+                    backgroundColor: 'rgba(242,237,228,0.06)',
+                    padding: '10px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderBottom: '1px solid rgba(242,237,228,0.1)',
+                  }}
+                >
+                  {['rgba(242,237,228,0.25)', 'rgba(242,237,228,0.15)', 'rgba(242,237,228,0.1)'].map((c, i) => (
+                    <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: c }} />
+                  ))}
+                  <div
+                    style={{
+                      flex: 1,
+                      marginLeft: '8px',
+                      backgroundColor: 'rgba(242,237,228,0.06)',
+                      borderRadius: '4px',
+                      padding: '4px 10px',
+                      fontSize: '0.65rem',
+                      color: 'rgba(242,237,228,0.4)',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    lucasbarcela.vercel.app
+                  </div>
+                </div>
+
+                {/* Content mockup */}
+                <div style={{ flex: 1, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ width: '40%', height: '2px', backgroundColor: 'rgba(242,237,228,0.2)' }} />
+                  <div style={{ width: '70%', height: '8px', backgroundColor: 'rgba(242,237,228,0.1)', borderRadius: '2px', marginTop: '8px' }} />
+                  <div style={{ width: '55%', height: '6px', backgroundColor: 'rgba(242,237,228,0.07)', borderRadius: '2px' }} />
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '40px', backgroundColor: 'rgba(242,237,228,0.05)', borderRadius: '2px' }} />
+                    <div style={{ flex: 1, height: '40px', backgroundColor: 'rgba(242,237,228,0.05)', borderRadius: '2px' }} />
+                  </div>
+                  <div style={{ width: '35%', height: '28px', backgroundColor: 'rgba(242,237,228,0.12)', borderRadius: '2px', marginTop: '8px' }} />
+                </div>
+              </div>
+
+              {/* Bottom stats */}
+              <div
+                style={{
+                  marginTop: '32px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1px',
+                  backgroundColor: 'rgba(242,237,228,0.1)',
+                }}
+              >
+                {[
+                  { n: '100%', l: 'Feito do zero' },
+                  { n: '01', l: 'Projeto entregue' },
+                ].map((s) => (
+                  <div key={s.l} style={{ padding: '16px 20px', backgroundColor: 'var(--ink)' }}>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '1.4rem', color: 'var(--cream)', marginBottom: '4px' }}>{s.n}</div>
+                    <div className="label" style={{ color: 'rgba(242,237,228,0.4)' }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </InView>
+
+        {/* Why it matters */}
+        <InView delay={0.2}>
+          <div
+            style={{
+              border: '1px solid var(--line)',
+              borderTop: 'none',
+              padding: 'clamp(24px, 4vw, 40px)',
+              backgroundColor: 'var(--cream-dark)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '24px',
+            }}
+          >
+            <p style={{ fontSize: '0.9rem', color: 'var(--ink-light)', fontWeight: 300, maxWidth: '600px', lineHeight: 1.7 }}>
+              <strong style={{ fontWeight: 500, color: 'var(--ink)' }}>Por que isso importa?</strong>{' '}
+              Criar este site não é apenas sobre design — é sobre mentalidade. Qualquer um pode dizer que tem iniciativa.
+              Eu mostro.
+            </p>
+            <span className="label" style={{ color: 'var(--ink-faint)' }}>2025 — Em andamento</span>
+          </div>
+        </InView>
+      </div>
+    </section>
+  );
+}
+
+// ─── Contato ──────────────────────────────────────────────────────────────────
+function Contato() {
+  return (
+    <section
+      id="contato"
+      style={{
+        padding: 'clamp(80px, 12vw, 160px) 40px',
+        backgroundColor: 'var(--ink)',
+        color: 'var(--cream)',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Header */}
+        <InView>
+          <span
+            className="label"
+            style={{ display: 'block', marginBottom: '64px', color: 'rgba(242,237,228,0.4)' }}
+          >
+            06 — Contato
+          </span>
+        </InView>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'clamp(40px, 8vw, 80px)',
+            alignItems: 'end',
+            marginBottom: 'clamp(60px, 10vw, 120px)',
+          }}
+        >
+          <InView delay={0.1}>
+            <h2
+              style={{
+                fontFamily: 'Georgia, serif',
+                fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+                fontWeight: 400,
+                lineHeight: 1.05,
+                color: 'var(--cream)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Vamos<br />conversar.
+            </h2>
+          </InView>
+
+          <InView delay={0.2}>
+            <p
+              style={{
+                fontSize: '1rem',
+                color: 'rgba(242,237,228,0.6)',
+                lineHeight: 1.8,
+                fontWeight: 300,
+                marginBottom: '32px',
+              }}
+            >
+              Se você busca alguém com vontade de aprender e crescer, estou pronto.
+              Cada conversa é uma oportunidade de mostrar quem sou na prática.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              <a
+                href={`https://wa.me/${WHATSAPP}?text=Olá Lucas, vi seu currículo e gostaria de conversar!`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '14px 28px',
+                  backgroundColor: 'var(--cream)',
+                  color: 'var(--ink)',
+                  fontSize: '0.78rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  border: '1px solid var(--cream)',
+                  transition: 'background 0.3s, color 0.3s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--cream)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'var(--cream)';
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--ink)';
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.523 5.845L.057 23.885l6.196-1.625C7.888 23.408 9.904 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.921 0-3.728-.501-5.292-1.378l-.38-.224-3.936 1.032 1.051-3.835-.248-.394A9.935 9.935 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+                </svg>
+                WhatsApp
+              </a>
+              <a
+                href={`mailto:${EMAIL}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '14px 28px',
+                  backgroundColor: 'transparent',
+                  color: 'var(--cream)',
+                  fontSize: '0.78rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  border: '1px solid rgba(242,237,228,0.25)',
+                  transition: 'background 0.3s, border-color 0.3s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'rgba(242,237,228,0.08)';
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(242,237,228,0.5)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(242,237,228,0.25)';
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                </svg>
+                E-mail
+              </a>
+            </div>
+          </InView>
+        </div>
+
+        {/* Contact info row */}
+        <InView delay={0.3}>
+          <div
+            style={{
+              borderTop: '1px solid rgba(242,237,228,0.1)',
+              paddingTop: '48px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '40px',
+            }}
+          >
+            {[
+              { label: 'Telefone', value: PHONE },
+              { label: 'Email', value: EMAIL },
+              { label: 'Disponibilidade', value: 'Imediata' },
+              { label: 'Localização', value: 'Brasil' },
+            ].map((c) => (
+              <div key={c.label}>
+                <span className="label" style={{ color: 'rgba(242,237,228,0.35)', display: 'block', marginBottom: '8px' }}>{c.label}</span>
+                <span style={{ fontSize: '0.95rem', color: 'rgba(242,237,228,0.7)', fontWeight: 300 }}>{c.value}</span>
+              </div>
+            ))}
+          </div>
+        </InView>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer
+      style={{
+        backgroundColor: 'var(--ink)',
+        borderTop: '1px solid rgba(242,237,228,0.08)',
+        padding: '28px 40px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+      }}
+    >
+      <span className="label" style={{ color: 'rgba(242,237,228,0.25)' }}>
+        © 2025 Lucas Barcela — Todos os direitos reservados
+      </span>
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="label underline-hover"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'rgba(242,237,228,0.35)',
+        }}
+      >
+        Voltar ao topo ↑
+      </button>
+    </footer>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+export default function App() {
+  return (
+    <>
+      <Navbar />
+      <main>
+        <Hero />
+        <Marquee />
+        <Sobre />
+        <Diferenciais />
+        <Habilidades />
+        <Objetivo />
+        <Projetos />
+        <Contato />
+      </main>
+      <Footer />
+    </>
+  );
+}
